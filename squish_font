@@ -1,0 +1,16 @@
+#!/usr/bin/env fontforge
+Open($1); # first param
+SelectAll();
+SelectFewer(0uf0026);
+SelectFewer(0uf0152);
+SelectFewer(0uf015c);
+SelectFewer(0uf0625);
+SelectFewer(0uf03c3);
+SelectFewer(0uf19d6);
+SelectFewer(0uf040a);
+SelectFewer(0uf099b);
+SelectFewer(0uf04d7);
+SelectFewer(0uf04db);
+DetachAndRemoveGlyphs();
+Save($2); # second param
+Quit(0);

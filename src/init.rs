@@ -15,12 +15,6 @@ pub fn setup_custom_fonts(ctx: &egui::Context) {
         "material_design_icons_font".to_owned(),
         egui::FontData::from_static(include_bytes!("../assets/fonts/MaterialDesignIcons.ttf")),
     );
-    fonts.font_data.insert(
-        "material_symbols_font".to_owned(),
-        egui::FontData::from_static(include_bytes!(
-            "../assets/fonts/MaterialSymbolsOutlined.ttf"
-        )),
-    );
     fonts
         .families
         .entry(egui::FontFamily::Proportional)
@@ -30,13 +24,7 @@ pub fn setup_custom_fonts(ctx: &egui::Context) {
         .families
         .entry(egui::FontFamily::Proportional)
         .or_default()
-        .insert(2, "material_design_icons_font".to_owned());
-    fonts
-        .families
-        .entry(egui::FontFamily::Proportional)
-        .or_default()
-        .insert(3, "material_symbols_font".to_owned());
-
+        .insert(1, "material_design_icons_font".to_owned());
     fonts
         .families
         .entry(egui::FontFamily::Monospace)
