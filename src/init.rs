@@ -13,9 +13,7 @@ pub fn setup_custom_fonts(ctx: &egui::Context) {
     );
     fonts.font_data.insert(
         "material_design_icons_font".to_owned(),
-        egui::FontData::from_static(include_bytes!(
-            "../assets/fonts/MaterialDesignIconsFull.ttf"
-        )),
+        egui::FontData::from_static(include_bytes!("../assets/fonts/MaterialDesignIcons.ttf")),
     );
     fonts
         .families
