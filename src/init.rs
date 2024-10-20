@@ -12,12 +12,6 @@ pub fn setup_custom_fonts(ctx: &egui::Context) {
         egui::FontData::from_static(include_bytes!("../assets/fonts/JetBrainsMono-Regular.ttf")),
     );
     fonts.font_data.insert(
-        "source_han_sans_font".to_owned(),
-        egui::FontData::from_static(include_bytes!(
-            "../assets/fonts/SourceHanSansSC-Regular.otf"
-        )),
-    );
-    fonts.font_data.insert(
         "material_design_icons_font".to_owned(),
         egui::FontData::from_static(include_bytes!("../assets/fonts/MaterialDesignIcons.ttf")),
     );
@@ -36,11 +30,6 @@ pub fn setup_custom_fonts(ctx: &egui::Context) {
         .families
         .entry(egui::FontFamily::Proportional)
         .or_default()
-        .insert(1, "source_han_sans_font".to_owned());
-    fonts
-        .families
-        .entry(egui::FontFamily::Proportional)
-        .or_default()
         .insert(2, "material_design_icons_font".to_owned());
     fonts
         .families
@@ -53,11 +42,6 @@ pub fn setup_custom_fonts(ctx: &egui::Context) {
         .entry(egui::FontFamily::Monospace)
         .or_default()
         .insert(0, "jetbrains_mono_font".to_owned());
-    fonts
-        .families
-        .entry(egui::FontFamily::Monospace)
-        .or_default()
-        .insert(1, "source_han_sans_font".to_owned());
 
     // Tell egui to use these fonts:
     ctx.set_fonts(fonts);
