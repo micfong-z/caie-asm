@@ -12,12 +12,14 @@ targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
 [dependencies]
 eframe = { version = "0.29", default-features = false, features = [
-    "glow",          # Use the glow rendering backend. Alternative: "wgpu".
+    "glow", # Use the glow rendering backend. Alternative: "wgpu".
 ] }
 log = "0.4"
 thiserror = "1.0.64"
 egui_dock = { version = "0.14", git = "https://github.com/micfong-z/egui_dock", branch = "compact_tab_bar" }
-chrono = { version = "0.4", features = ["wasmbind"] }
+chrono = { version = "0.4", features = ["wasmbind", "serde"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0" }
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

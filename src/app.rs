@@ -1,13 +1,15 @@
 use chrono::{DateTime, Local};
 use eframe::egui::{self, vec2, Color32, FontId, Hyperlink, RichText};
 use egui_dock::{DockArea, DockState, NodeIndex, Style};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     assembler::assemble,
     colors::MfColors,
     icons::material_design_icons::{
-        MDI_ALERT, MDI_CLOCK_FAST, MDI_CLOSE_OCTAGON, MDI_HELP_CIRCLE_OUTLINE, MDI_OCTAGON,
-        MDI_PACKAGE_VARIANT_CLOSED_REMOVE, MDI_PLAY, MDI_RESTORE, MDI_STEP_FORWARD, MDI_STOP,
+        MDI_ALERT, MDI_CLOCK_FAST, MDI_CLOSE_OCTAGON, MDI_CONTENT_COPY, MDI_EXPORT,
+        MDI_HELP_CIRCLE_OUTLINE, MDI_IMPORT, MDI_OCTAGON, MDI_PACKAGE_VARIANT_CLOSED_REMOVE,
+        MDI_PLAY, MDI_RESTORE, MDI_STEP_FORWARD, MDI_STOP,
     },
     init, AssemblerError, ExecutionInfo, ExecutionState, MemoryData, Opcode, Operand, Register,
 };
@@ -40,6 +42,7 @@ string:
         &64
 ";
 
+#[derive(Serialize, Deserialize)]
 struct AppContext {
     source_code: String,
     memory: [[MemoryData; 16]; 16],
@@ -63,6 +66,8 @@ struct AppContext {
     show_assembler_error_window: bool,
     show_assembler_info_window: bool,
     value_as_hex: bool,
+
+    ins_executed: u64,
 
     clock_speed: u16,
     execution_info: Option<ExecutionInfo>,
@@ -140,14 +145,12 @@ impl AppContext {
                         }
                     };
                 });
-        egui::ScrollArea::vertical().show(ui, |ui| {
-            ui.add(
-                egui::TextEdit::multiline(&mut self.source_code)
-                    .code_editor()
-                    .desired_rows(10)
-                    .desired_width(f32::INFINITY),
-            );
-        });
+        ui.add(
+            egui::TextEdit::multiline(&mut self.source_code)
+                .code_editor()
+                .desired_rows(10)
+                .desired_width(f32::INFINITY),
+        );
     }
 
     fn console(&mut self, ui: &mut egui::Ui) {
@@ -381,6 +384,12 @@ impl AppContext {
     }
 
     fn step(&mut self) {
+        if self.ins_executed >= 1000 {
+            self.execution_info = Some(ExecutionInfo::TooManySteps {
+                steps: self.ins_executed,
+            });
+            self.show_assembler_info_window = true;
+        }
         self.mar = self.pc;
         self.mdr = self.memory.as_flattened()[self.pc as usize];
         let current_instruction = match &self.memory.as_flattened()[self.pc as usize] {
@@ -1021,6 +1030,11 @@ impl AppContext {
 pub struct CaieAsmApp {
     tree: DockState<String>,
     context: AppContext,
+    export_string: String,
+    import_string: String,
+    show_export_window: bool,
+    show_import_window: bool,
+    import_failed: bool,
 }
 
 impl Default for CaieAsmApp {
@@ -1066,7 +1080,13 @@ impl Default for CaieAsmApp {
                 clock_speed: 4,
                 execution_info: None,
                 last_step_time: Local::now(),
+                ins_executed: 0,
             },
+            export_string: String::new(),
+            import_string: String::new(),
+            show_export_window: false,
+            show_import_window: false,
+            import_failed: false,
         }
     }
 }
@@ -1085,19 +1105,33 @@ impl eframe::App for CaieAsmApp {
             if self.context.clock_speed == 0 {
                 self.context.last_step_time = Local::now();
                 self.context.step();
+                self.context.ins_executed += 1;
             } else {
                 let now = Local::now();
                 let elapsed = now - self.context.last_step_time;
                 if elapsed.num_milliseconds() as f32 >= 1000. / (self.context.clock_speed) as f32 {
                     self.context.step();
                     self.context.last_step_time = now;
+                    self.context.ins_executed += 1;
                 }
             }
             ctx.request_repaint();
         }
 
+        if self.context.execution_state == ExecutionState::Stopped {
+            self.context.ins_executed = 0;
+        }
+
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
+                if ui.button(MDI_EXPORT.to_owned() + " Export").clicked() {
+                    self.show_export_window = true;
+                    self.export_string = serde_json::to_string(&self.context).unwrap();
+                }
+                if ui.button(MDI_IMPORT.to_owned() + " Import").clicked() {
+                    self.show_import_window = true;
+                }
+                ui.separator();
                 ui.menu_button(MDI_CLOCK_FAST.to_owned() + " Clock speed", |ui| {
                     ui.radio_value(&mut self.context.clock_speed, 1, "1 Hz");
                     ui.radio_value(&mut self.context.clock_speed, 2, "2 Hz");
@@ -1195,7 +1229,7 @@ impl eframe::App for CaieAsmApp {
                     MfColors::YELLOW_500,
                     "Many instructions executed.", 
                     format!(
-                        "{} instructions have been executed. You may have mistakenly written a program that runs indefinitely.\n\nNote that this emulator runs in your browser, so you really can't break anything.",
+                        "{} instructions have been executed. You may have mistakenly written a program that runs indefinitely.\n\nNote that this emulator runs entirely in your browser, so you really can't break anything.",
                         steps
                     )
                 ),
@@ -1263,6 +1297,63 @@ impl eframe::App for CaieAsmApp {
                 } else {
                     ui.label("The assembler is alright – no error found.");
                     ui.label("This is a bug. Please report this to Micfong.");
+                }
+            });
+
+        egui::Window::new("Export")
+            .open(&mut self.show_export_window)
+            .resizable(false)
+            .collapsible(false)
+            .show(ctx, |ui| {
+                ui.label(
+                    "This is a sharable string that contains the current state of the emulator.",
+                );
+                ui.horizontal(|ui| {
+                    if ui.button(MDI_RESTORE.to_owned() + " Refresh").clicked() {
+                        self.export_string = serde_json::to_string(&self.context).unwrap();
+                    }
+                    if ui.button(MDI_CONTENT_COPY.to_owned() + " Copy").clicked() {
+                        ui.output_mut(|o| o.copied_text = self.export_string.clone());
+                    }
+                });
+
+                egui::ScrollArea::vertical()
+                    .max_height(400.0)
+                    .show(ui, |ui| {
+                        ui.add(
+                            egui::TextEdit::multiline(&mut self.export_string)
+                                .code_editor()
+                                .interactive(false),
+                        );
+                    });
+            });
+
+        egui::Window::new("Import")
+            .open(&mut self.show_import_window)
+            .resizable(false)
+            .collapsible(false)
+            .show(ctx, |ui| {
+                ui.label("Paste the exported text here to restore the state.");
+                if self.import_failed {
+                    ui.colored_label(
+                        MfColors::RED_500,
+                        "Failed to import. Errorneous JSON string.",
+                    );
+                }
+                egui::ScrollArea::vertical()
+                    .max_height(400.0)
+                    .show(ui, |ui| {
+                        ui.add(egui::TextEdit::multiline(&mut self.import_string).code_editor());
+                    });
+                if ui.button(MDI_IMPORT.to_owned() + " Import").clicked() {
+                    match serde_json::from_str(&self.import_string) {
+                        Ok(c) => {
+                            self.context = c;
+                        }
+                        Err(_) => {
+                            self.import_failed = true;
+                        }
+                    }
                 }
             });
     }

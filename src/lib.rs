@@ -9,15 +9,16 @@ use std::{
 };
 
 pub use app::CaieAsmApp;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub enum MemoryData {
     Instruction(Opcode, Operand),
     Value(u16),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub enum Opcode {
     Ldm,
     Ldd,
@@ -85,7 +86,7 @@ impl TryFrom<&str> for Opcode {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub enum Operand {
     Register(Register),
     Address(u16),
@@ -127,13 +128,13 @@ impl Operand {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub enum Register {
     Ix,
     Acc,
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Serialize, Deserialize)]
 pub enum ExecutionState {
     Executing,
     ExecutingAwaitingInput,
@@ -141,6 +142,7 @@ pub enum ExecutionState {
     Stopped,
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum ExecutionInfo {
     ExecutionTerminated {
         ins_address: u16,
@@ -150,7 +152,7 @@ pub enum ExecutionInfo {
         value: u16,
     },
     TooManySteps {
-        steps: u16,
+        steps: u64,
     },
     AddressNotInMemory {
         ins_address: u16,
@@ -162,7 +164,7 @@ pub enum ExecutionInfo {
     },
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Serialize, Deserialize)]
 pub enum AssemblerError {
     #[error("too many operands on line {line_index}: found {operands_found} operands")]
     TooManyOperands {
