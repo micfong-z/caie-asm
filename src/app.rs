@@ -1181,8 +1181,14 @@ impl eframe::App for CaieAsmApp {
                             RichText::new("Micfong").color(MfColors::BLUE_300),
                             "https://micfong.space/",
                         ));
-                        ui.label("CAIE Assembly Emulator by");
+                        ui.label("By");
                     });
+                    ui.separator();
+
+                    ui.add(Hyperlink::from_label_and_url(
+                        RichText::new("Source code").color(MfColors::BLUE_300),
+                        "https://github.com/micfong-z/caie-asm",
+                    ));
                     ui.separator();
                 })
             });
